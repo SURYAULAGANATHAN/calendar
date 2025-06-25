@@ -11,18 +11,34 @@ const Calendar = () => {
   const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
-    // Load events from JSON file (in a real app, this would be an API call)
-    const loadEvents = async () => {
-      try {
-        const response = await fetch('/data/events.json');
-        const data = await response.json();
-        setEvents(data);
-      } catch (error) {
-        console.error('Error loading events:', error);
+    // Load initial events
+    const initialEvents = [
+      {
+        id: 1,
+        title: "Team Meeting",
+        description: "Weekly team sync",
+        startDate: formatDate(new Date()),
+        endDate: formatDate(new Date()),
+        startTime: "10:00",
+        endTime: "11:00",
+        color: "bg-blue-500"
       }
-    };
-    loadEvents();
+    ];
+    setEvents(initialEvents);
   }, []);
+
+  // Helper function to format dates as YYYY-MM-DD
+  const formatDate = (date) => {
+    const d = new Date(date);
+    let month = '' + (d.getMonth() + 1);
+    let day = '' + d.getDate();
+    const year = d.getFullYear();
+
+    if (month.length < 2) month = '0' + month;
+    if (day.length < 2) day = '0' + day;
+
+    return [year, month, day].join('-');
+  };
 
   const currentMonth = currentDate.getMonth();
   const currentYear = currentDate.getFullYear();
@@ -41,7 +57,15 @@ const Calendar = () => {
   const handleDateClick = (day) => {
     const clickedDate = new Date(currentYear, currentMonth, day);
     setSelectedDate(clickedDate);
-    setSelectedEvent(null);
+    setSelectedEvent({
+      title: '',
+      description: '',
+      startDate: formatDate(clickedDate),
+      endDate: formatDate(clickedDate),
+      startTime: '09:00',
+      endTime: '10:00',
+      color: 'bg-blue-500'
+    });
     setShowEventForm(true);
   };
 
@@ -51,13 +75,14 @@ const Calendar = () => {
   };
 
   const addOrUpdateEvent = (event) => {
-    if (selectedEvent) {
+    if (event.id) {
       // Update existing event
       setEvents(events.map(e => e.id === event.id ? event : e));
     } else {
-      // Add new event
-      setEvents([...events, event]);
+      // Add new event with a unique ID
+      setEvents([...events, { ...event, id: Date.now() }]);
     }
+    setShowEventForm(false);
   };
 
   const deleteEvent = (eventId) => {
@@ -66,20 +91,41 @@ const Calendar = () => {
   };
 
   const getEventsForDate = (day) => {
-    const dateStr = new Date(currentYear, currentMonth, day).toISOString().split('T')[0];
+    const date = new Date(currentYear, currentMonth, day);
+    const dateStr = formatDate(date);
+
     return events.filter(event => {
       const eventStart = new Date(event.startDate);
       const eventEnd = new Date(event.endDate);
-      const current = new Date(currentYear, currentMonth, day);
-      
-      return current >= eventStart && current <= eventEnd;
+      eventStart.setHours(0, 0, 0, 0);
+      eventEnd.setHours(0, 0, 0, 0);
+      date.setHours(0, 0, 0, 0);
+
+      return date >= eventStart && date <= eventEnd;
     });
   };
 
   const checkForEventConflicts = (events) => {
-    // This is a simplified conflict check
-    // In a real app, you'd want to compare times as well
-    return events.length > 3; // If more than 3 events on the same day, consider it a conflict
+    // Check for time conflicts
+    if (events.length < 2) return false;
+
+    const timeSlots = events.map(event => {
+      const start = new Date(`1970-01-01T${event.startTime}`);
+      const end = new Date(`1970-01-01T${event.endTime}`);
+      return { start, end };
+    });
+
+    // Sort by start time
+    timeSlots.sort((a, b) => a.start - b.start);
+
+    // Check for overlaps
+    for (let i = 1; i < timeSlots.length; i++) {
+      if (timeSlots[i].start < timeSlots[i - 1].end) {
+        return true;
+      }
+    }
+
+    return false;
   };
 
   const renderDays = () => {
@@ -90,8 +136,8 @@ const Calendar = () => {
     // Add empty cells for days before the first day of the month
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(
-        <div 
-          key={`empty-${i}`} 
+        <div
+          key={`empty-${i}`}
           className="h-32 p-2 border border-gray-200 bg-gray-50"
         ></div>
       );
@@ -112,11 +158,10 @@ const Calendar = () => {
           onClick={() => handleDateClick(day)}
         >
           <div className="flex justify-between items-start mb-1">
-            <span className={`text-sm ${
-              isToday 
-                ? 'font-bold bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center' 
+            <span className={`text-sm ${isToday
+                ? 'font-bold bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center'
                 : 'text-gray-700'
-            }`}>
+              }`}>
               {day}
             </span>
             {hasConflict && (
@@ -178,8 +223,8 @@ const Calendar = () => {
         <div className="p-4">
           <div className="grid grid-cols-7 gap-0">
             {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map(day => (
-              <div 
-                key={day} 
+              <div
+                key={day}
                 className="text-center font-semibold p-3 bg-gray-100 text-gray-700 uppercase text-sm"
               >
                 {day.substring(0, 3)}
@@ -197,6 +242,7 @@ const Calendar = () => {
             setShowEventForm(false);
             setSelectedEvent(null);
           }}
+          onDelete={deleteEvent}
           eventToEdit={selectedEvent}
         />
       )}
