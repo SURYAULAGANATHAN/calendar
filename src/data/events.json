@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "title": "Team Meeting",
+    "description": "Weekly team sync",
+    "startDate": "2023-11-15",
+    "endDate": "2023-11-15",
+    "startTime": "10:00",
+    "endTime": "11:00",
+    "color": "bg-blue-500"
+  },
+  {
+    "id": 2,
+    "title": "Lunch with Client",
+    "description": "Discuss new project",
+    "startDate": "2023-11-17",
+    "endDate": "2023-11-17",
+    "startTime": "12:30",
+    "endTime": "13:30",
+    "color": "bg-green-500"
+  },
+  {
+    "id": 3,
+    "title": "Product Demo",
+    "description": "Show new features to stakeholders",
+    "startDate": "2023-11-20",
+    "endDate": "2023-11-20",
+    "startTime": "14:00",
+    "endTime": "15:00",
+    "color": "bg-purple-500"
+  }
+]
